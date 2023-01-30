@@ -71,6 +71,7 @@ namespace EveOPreview.View
 		protected IWindowManager WindowManager { get; }
 
 		public IntPtr Id { get; set; }
+		public int Epoch { get; set; }
 
 		public string Title
 		{

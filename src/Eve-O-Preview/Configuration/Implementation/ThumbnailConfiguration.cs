@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 
@@ -20,6 +22,7 @@ namespace EveOPreview.Configuration.Implementation
 			this.ClientHotkey = new Dictionary<string, string>();
 			this.DisableThumbnail = new Dictionary<string, bool>();
 			this.PriorityClients = new List<string>();
+			this.thumbnailAreaPositionOffsets = new Dictionary<IntPtr, ThumbnailArea.PositionOffset>();
 
 			this.MinimizeToTray = false;
 			this.ThumbnailRefreshPeriod = 500;
@@ -120,6 +123,9 @@ namespace EveOPreview.Configuration.Implementation
 		public int ActiveClientHighlightThickness { get; set; }
 
 		[JsonProperty]
+		public SwitchingHotkey[] SwitchingHotkeys { get; set; }
+
+		[JsonProperty]
 		private Dictionary<string, Dictionary<string, Point>> PerClientLayout { get; set; }
 		[JsonProperty]
 		private Dictionary<string, Point> FlatLayout { get; set; }
@@ -131,6 +137,12 @@ namespace EveOPreview.Configuration.Implementation
 		private Dictionary<string, bool> DisableThumbnail { get; set; }
 		[JsonProperty]
 		private List<string> PriorityClients { get; set; }
+		[JsonProperty]
+		private ThumbnailArea ThumbnailArea { get; set; }
+		[JsonIgnore]
+		private Dictionary<IntPtr, ThumbnailArea.PositionOffset> thumbnailAreaPositionOffsets;
+
+		public bool EnableNonDefaultPositionForDefaultClient { get { return this.ThumbnailArea != null; } }
 
 		public Point GetDefaultThumbnailLocation()
 		{
@@ -140,9 +152,66 @@ namespace EveOPreview.Configuration.Implementation
 			return new Point(5, 5);
 		}
 
-		public Point GetThumbnailLocation(string currentClient, string activeClient, Point defaultLocation)
+		private void RecalculateThumbnailAreaPositionOffsets()
+        {
+			int x = 0, y = 0;
+			int xDiff = 0, yDiff = 0;
+			switch (this.ThumbnailArea.Dir)
+			{
+				case ThumbnailArea.Direction.LeftToRight:
+					xDiff = this.ThumbnailSize.Width;
+					break;
+				case ThumbnailArea.Direction.RightToLeft:
+					x = this.ThumbnailArea.Width - this.ThumbnailSize.Width;
+					xDiff = -this.ThumbnailSize.Width;
+					break;
+				case ThumbnailArea.Direction.TopDown:
+					yDiff = this.ThumbnailSize.Height;
+					break;
+				case ThumbnailArea.Direction.BottomUp:
+					y = this.ThumbnailArea.Height - this.ThumbnailSize.Height;
+					yDiff = -this.ThumbnailSize.Height;
+					break;
+			}
+			foreach(var tapo in this.thumbnailAreaPositionOffsets.Values.OrderBy(tapo => tapo.Epoch))
+            {
+				tapo.X = x;
+				tapo.Y = y;
+				x += xDiff;
+				y += yDiff;
+			}
+        }
+
+		public void RemoveClientLocation(IntPtr currentClientId)
+        {
+			if (!this.thumbnailAreaPositionOffsets.ContainsKey(currentClientId))
+            {
+				return;
+            }
+			this.thumbnailAreaPositionOffsets.Remove(currentClientId);
+			this.RecalculateThumbnailAreaPositionOffsets();
+		}
+
+		public Point GetThumbnailLocation(string currentClient, IntPtr currentClientId, string activeClient, Point defaultLocation, int thumbnailEpoch)
 		{
 			Point location;
+
+			if (this.ThumbnailArea != null)
+            {
+				ThumbnailArea.PositionOffset tapo;
+				if (!this.thumbnailAreaPositionOffsets.TryGetValue(currentClientId, out tapo))
+                {
+					tapo = new ThumbnailArea.PositionOffset();
+					tapo.Epoch = thumbnailEpoch;
+					this.thumbnailAreaPositionOffsets.Add(currentClientId, tapo);
+					this.RecalculateThumbnailAreaPositionOffsets();
+					return new Point(this.ThumbnailArea.X + tapo.X, this.ThumbnailArea.Y + tapo.Y);
+				}
+				else
+                {
+					return new Point(this.ThumbnailArea.X + tapo.X, this.ThumbnailArea.Y + tapo.Y);
+				}
+            }
 
 			// What this code does:
 			// If Per-Client layouts are enabled

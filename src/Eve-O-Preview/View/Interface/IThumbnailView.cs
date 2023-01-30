@@ -7,6 +7,7 @@ namespace EveOPreview.View
 	public interface IThumbnailView : IView
 	{
 		IntPtr Id { get; set; }
+		int Epoch { get; set; }
 		string Title { get; set; }
 
 		bool IsActive { get; set; }

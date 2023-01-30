@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace EveOPreview.Configuration
@@ -37,10 +38,14 @@ namespace EveOPreview.Configuration
 		bool EnableActiveClientHighlight { get; set; }
 		Color ActiveClientHighlightColor { get; set; }
 		int ActiveClientHighlightThickness { get; set; }
+		bool EnableNonDefaultPositionForDefaultClient { get; }
+		
+		SwitchingHotkey[] SwitchingHotkeys { get; set; }
 
 		Point GetDefaultThumbnailLocation();
-		Point GetThumbnailLocation(string currentClient, string activeClient, Point defaultLocation);
+		Point GetThumbnailLocation(string currentClient, IntPtr currentClientId, string activeClient, Point defaultLocation, int thumbnailEpoch);
 		void SetThumbnailLocation(string currentClient, string activeClient, Point location);
+		void RemoveClientLocation(IntPtr currentClientId);
 
 		ClientLayout GetClientLayout(string currentClient);
 		void SetClientLayout(string currentClient, ClientLayout layout);

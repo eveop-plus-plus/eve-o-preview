@@ -42,6 +42,8 @@ namespace EveOPreview.Services
 
 		private int _refreshCycleCount;
 		private int _hideThumbnailsDelay;
+		private static int _thumbnailEpoch;
+		private List<SwitchGroupManager> _switchGroupManagers = new List<SwitchGroupManager>();
 		#endregion
 
 		public ThumbnailManager(IMediator mediator, IThumbnailConfiguration configuration, IProcessMonitor processMonitor, IWindowManager windowManager, IThumbnailViewFactory factory)
@@ -76,11 +78,16 @@ namespace EveOPreview.Services
 			this._thumbnailUpdateTimer.Start();
 
 			this.RefreshThumbnails();
+			foreach (var sh in _configuration.SwitchingHotkeys)
+			{
+				this.RegisterSwitchingHotkey(sh);
+			}
 		}
 
 		public void Stop()
 		{
 			this._thumbnailUpdateTimer.Stop();
+			this.UnregisterSwitchingHotkeys();
 		}
 
 		private void ThumbnailUpdateTimerTick(object sender, EventArgs e)
@@ -98,7 +105,8 @@ namespace EveOPreview.Services
 
 			foreach (IProcessInfo process in addedProcesses)
 			{
-				IThumbnailView view = this._thumbnailViewFactory.Create(process.Handle, process.Title, this._configuration.ThumbnailSize);
+				_thumbnailEpoch += 1;
+				IThumbnailView view = this._thumbnailViewFactory.Create(process.Handle, _thumbnailEpoch, process.Title, this._configuration.ThumbnailSize);
 				view.IsOverlayEnabled = this._configuration.ShowThumbnailOverlays;
 				view.SetFrames(this._configuration.ShowThumbnailFrames);
 				// Max/Min size limitations should be set AFTER the frames are disabled
@@ -107,7 +115,7 @@ namespace EveOPreview.Services
 				view.SetTopMost(this._configuration.ShowThumbnailsAlwaysOnTop);
 
 				view.ThumbnailLocation = this.IsManageableThumbnail(view)
-											? this._configuration.GetThumbnailLocation(view.Title, this._activeClient.Title, view.ThumbnailLocation)
+											? this._configuration.GetThumbnailLocation(view.Title, view.Id, this._activeClient.Title, view.ThumbnailLocation, view.Epoch)
 											: this._configuration.GetDefaultThumbnailLocation();
 
 				this._thumbnailViews.Add(view.Id, view);
@@ -171,6 +179,7 @@ namespace EveOPreview.Services
 				view.ThumbnailActivated = null;
 
 				view.Close();
+				this._configuration.RemoveClientLocation(process.Handle);
 			}
 
 			if ((viewsAdded.Count > 0) || (viewsRemoved.Count > 0))
@@ -297,7 +306,7 @@ namespace EveOPreview.Services
 					// Do not even move thumbnails with default caption
 					if (this.IsManageableThumbnail(view))
 					{
-						view.ThumbnailLocation = this._configuration.GetThumbnailLocation(view.Title, this._activeClient.Title, view.ThumbnailLocation);
+						view.ThumbnailLocation = this._configuration.GetThumbnailLocation(view.Title, view.Id, this._activeClient.Title, view.ThumbnailLocation, view.Epoch);
 					}
 
 					view.SetOpacity(this._configuration.ThumbnailOpacity);
@@ -736,7 +745,7 @@ namespace EveOPreview.Services
 		// TODO Move to a service (?)
 		private bool IsManageableThumbnail(IThumbnailView view)
 		{
-			return view.Title != ThumbnailManager.DEFAULT_CLIENT_TITLE;
+			return view.Title != ThumbnailManager.DEFAULT_CLIENT_TITLE || this._configuration.EnableNonDefaultPositionForDefaultClient;
 		}
 
 		// Quick sanity check that the window is not minimized
@@ -746,5 +755,30 @@ namespace EveOPreview.Services
 					&& (top > ThumbnailManager.WINDOW_POSITION_THRESHOLD_LOW) && (top < ThumbnailManager.WINDOW_POSITION_THRESHOLD_HIGH)
 					&& (width > ThumbnailManager.WINDOW_SIZE_THRESHOLD) && (height > ThumbnailManager.WINDOW_SIZE_THRESHOLD);
 		}
+
+		public void RegisterSwitchingHotkey(SwitchingHotkey sh)
+		{
+			var sgm = new SwitchGroupManager(sh, this);
+			sgm.Register();
+			_switchGroupManagers.Add(sgm);
+		}
+
+		public void UnregisterSwitchingHotkeys()
+        {
+			foreach (var sgm in _switchGroupManagers)
+            {
+				sgm.Unregister();
+            }
+        }
+
+        public Dictionary<IntPtr, IThumbnailView> GetViews()
+        {
+			return _thumbnailViews;
+        }
+
+		public bool IsActiveClient(IThumbnailView view)
+        {
+			return _activeClient.Handle == view.Id;
+        }
 	}
 }
