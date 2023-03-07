@@ -1,15 +1,3 @@
-EVE-O-Preview has new maintainer.
-
-New forum thread: https://forums.eveonline.com/t/361804
-
-New repository location: https://github.com/EveOPlus/eve-o-preview
-
-Farewell Reddit post: https://www.reddit.com/r/Eve/comments/ujzlq5/eveo_preview_new_developer_needed/
-
-**So Long, and Thanks for All the Fish**
-
----
-
 ## Overview
 
 The purpose of this application is to provide a simple way to keep an eye on several simultaneously running EVE Online clients and to easily switch between them. While running it shows a set of live thumbnails for each of the active EVE Online clients. These thumbnails allow fast switch to the corresponding EVE Online client either using mouse or configurable hotkeys.
@@ -22,14 +10,6 @@ The program does NOT (and will NOT ever) do the following things:
 * display modified EVE Online interface
 * broadcast any keyboard or mouse events
 * anyhow interact with EVE Online except of bringing its main window to foreground or resizing/minimizing it
-
-<div style="text-align: center;">
-
-![EVE Partner](https://github.com/Phrynohyas/eve-o-preview/blob/develop/assets/PartnerBadge.png?raw=true)
-
-</div>
-
-<div style="page-break-after: always;"></div>
 
 **Under any conditions you should NOT use EVE-O Preview for any actions that break EULA or ToS of EVE Online.**
 
@@ -197,7 +177,7 @@ This setting allows to enable an alternate thumbnail render. This render doesn't
 
 ### Maintained by
 
-* Phrynohyas Tig-Rah
+* Bun Chi
 
 
 ### Created by
@@ -208,6 +188,8 @@ This setting allows to enable an alternate thumbnail render. This render doesn't
 
 ### Previous maintainers
  
+* Phrynohyas Tig-Rah
+
 * Makari Aeron
 
 * StinkRay
@@ -218,7 +200,7 @@ This setting allows to enable an alternate thumbnail render. This render doesn't
 * CCP FoxFour
 
 
-### Forum thread
+### Original Forum thread
 
 https://forums.eveonline.com/t/4202
 
